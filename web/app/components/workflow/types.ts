@@ -13,6 +13,7 @@ import type {
   DefaultValueForm,
   ErrorHandleTypeEnum,
 } from '@/app/components/workflow/nodes/_base/components/error-handle/types'
+import type { WorkflowRetryConfig } from '@/app/components/workflow/nodes/_base/components/retry/types'
 
 export enum BlockEnum {
   Start = 'start',
@@ -34,6 +35,9 @@ export enum BlockEnum {
   ListFilter = 'list-operator',
   IterationStart = 'iteration-start',
   Assigner = 'assigner', // is now named as VariableAssigner
+  Agent = 'agent',
+  Loop = 'loop',
+  LoopStart = 'loop-start',
 }
 
 export enum ControlMode {
@@ -68,6 +72,7 @@ export type CommonNodeType<T = {}> = {
   _iterationIndex?: number
   _inParallelHovering?: boolean
   _waitingRun?: boolean
+  _retryIndex?: number
   isInIteration?: boolean
   iteration_id?: string
   selected?: boolean
@@ -76,7 +81,12 @@ export type CommonNodeType<T = {}> = {
   type: BlockEnum
   width?: number
   height?: number
+  _loopLength?: number
+  _loopIndex?: number
+  isInLoop?: boolean
+  loop_id?: string
   error_strategy?: ErrorHandleTypeEnum
+  retry_config?: WorkflowRetryConfig
   default_value?: DefaultValueForm[]
 } & T & Partial<Pick<ToolDefaultValue, 'provider_id' | 'provider_type' | 'provider_name' | 'tool_name'>>
 
@@ -90,6 +100,8 @@ export type CommonEdgeType = {
   _waitingRun?: boolean
   isInIteration?: boolean
   iteration_id?: string
+  isInLoop?: boolean
+  loop_id?: string
   sourceType: BlockEnum
   targetType: BlockEnum
 }
@@ -164,6 +176,7 @@ export enum InputVarType {
   iterator = 'iterator', // iteration input
   singleFile = 'file',
   multiFiles = 'file-list',
+  loop = 'loop', // loop input
 }
 
 export type InputVar = {
@@ -286,6 +299,11 @@ export enum WorkflowRunningStatus {
   Stopped = 'stopped',
 }
 
+export enum WorkflowVersion {
+  Draft = 'draft',
+  Latest = 'latest',
+}
+
 export enum NodeRunningStatus {
   NotStart = 'not-start',
   Waiting = 'waiting',
@@ -293,6 +311,7 @@ export enum NodeRunningStatus {
   Succeeded = 'succeeded',
   Failed = 'failed',
   Exception = 'exception',
+  Retry = 'retry',
 }
 
 export type OnNodeAdd = (
@@ -391,4 +410,15 @@ export type UploadFileSetting = {
 export type VisionSetting = {
   variable_selector: ValueSelector
   detail: Resolution
+}
+
+export enum WorkflowVersionFilterOptions {
+  all = 'all',
+  onlyYours = 'onlyYours',
+}
+
+export enum VersionHistoryContextMenuOptions {
+  restore = 'restore',
+  edit = 'edit',
+  delete = 'delete',
 }

@@ -35,7 +35,7 @@ class AnswerStreamProcessor(StreamProcessor):
 
                 yield event
             elif isinstance(event, NodeRunStreamChunkEvent):
-                if event.in_iteration_id:
+                if event.in_iteration_id or event.in_loop_id:
                     yield event
                     continue
 
@@ -60,11 +60,10 @@ class AnswerStreamProcessor(StreamProcessor):
 
                     del self.current_stream_chunk_generating_node_ids[event.route_node_state.node_id]
 
-                # remove unreachable nodes
                 self._remove_unreachable_nodes(event)
 
                 # generate stream outputs
-                yield from self._generate_stream_outputs_when_node_finished(event)
+                yield from self._generate_stream_outputs_when_node_finished(cast(NodeRunSucceededEvent, event))
             else:
                 yield event
 
@@ -83,7 +82,7 @@ class AnswerStreamProcessor(StreamProcessor):
         :param event: node run succeeded event
         :return:
         """
-        for answer_node_id, position in self.route_position.items():
+        for answer_node_id in self.route_position:
             # all depends on answer node id not in rest node ids
             if event.route_node_state.node_id != answer_node_id and (
                 answer_node_id not in self.rest_node_ids
@@ -131,7 +130,7 @@ class AnswerStreamProcessor(StreamProcessor):
                             node_type=event.node_type,
                             node_data=event.node_data,
                             chunk_content=text,
-                            from_variable_selector=value_selector,
+                            from_variable_selector=list(value_selector),
                             route_node_state=event.route_node_state,
                             parallel_id=event.parallel_id,
                             parallel_start_node_id=event.parallel_start_node_id,
@@ -156,11 +155,13 @@ class AnswerStreamProcessor(StreamProcessor):
         for answer_node_id, route_position in self.route_position.items():
             if answer_node_id not in self.rest_node_ids:
                 continue
-
+            # exclude current node id
+            answer_dependencies = self.generate_routes.answer_dependencies
+            if event.node_id in answer_dependencies[answer_node_id]:
+                answer_dependencies[answer_node_id].remove(event.node_id)
+            answer_dependencies_ids = answer_dependencies.get(answer_node_id, [])
             # all depends on answer node id not in rest node ids
-            if all(
-                dep_id not in self.rest_node_ids for dep_id in self.generate_routes.answer_dependencies[answer_node_id]
-            ):
+            if all(dep_id not in self.rest_node_ids for dep_id in answer_dependencies_ids):
                 if route_position >= len(self.generate_routes.answer_generate_route[answer_node_id]):
                     continue
 

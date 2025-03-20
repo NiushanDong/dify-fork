@@ -16,12 +16,14 @@ class NodeType(StrEnum):
     VARIABLE_AGGREGATOR = "variable-aggregator"
     LEGACY_VARIABLE_AGGREGATOR = "variable-assigner"  # TODO: Merge this into VARIABLE_AGGREGATOR in the database.
     LOOP = "loop"
+    LOOP_START = "loop-start"
     ITERATION = "iteration"
     ITERATION_START = "iteration-start"  # Fake start node for iteration.
     PARAMETER_EXTRACTOR = "parameter-extractor"
     VARIABLE_ASSIGNER = "assigner"
     DOCUMENT_EXTRACTOR = "document-extractor"
     LIST_OPERATOR = "list-operator"
+    AGENT = "agent"
 
 
 class ErrorStrategy(StrEnum):
@@ -35,3 +37,4 @@ class FailBranchSourceHandle(StrEnum):
 
 
 CONTINUE_ON_ERROR_NODE_TYPE = [NodeType.LLM, NodeType.CODE, NodeType.TOOL, NodeType.HTTP_REQUEST]
+RETRY_ON_ERROR_NODE_TYPE = CONTINUE_ON_ERROR_NODE_TYPE

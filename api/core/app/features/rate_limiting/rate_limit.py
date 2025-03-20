@@ -17,7 +17,7 @@ class RateLimit:
     _UNLIMITED_REQUEST_ID = "unlimited_request_id"
     _REQUEST_MAX_ALIVE_TIME = 10 * 60  # 10 minutes
     _ACTIVE_REQUESTS_COUNT_FLUSH_INTERVAL = 5 * 60  # recalculate request_count from request_detail every 5 minutes
-    _instance_dict = {}
+    _instance_dict: dict[str, "RateLimit"] = {}
 
     def __new__(cls: type["RateLimit"], client_id: str, max_active_requests: int):
         if client_id not in cls._instance_dict:
@@ -40,14 +40,10 @@ class RateLimit:
         self.last_recalculate_time = time.time()
         # flush max active requests
         if use_local_value or not redis_client.exists(self.max_active_requests_key):
-            with redis_client.pipeline() as pipe:
-                pipe.set(self.max_active_requests_key, self.max_active_requests)
-                pipe.expire(self.max_active_requests_key, timedelta(days=1))
-                pipe.execute()
+            redis_client.setex(self.max_active_requests_key, timedelta(days=1), self.max_active_requests)
         else:
-            with redis_client.pipeline() as pipe:
-                self.max_active_requests = int(redis_client.get(self.max_active_requests_key).decode("utf-8"))
-                redis_client.expire(self.max_active_requests_key, timedelta(days=1))
+            self.max_active_requests = int(redis_client.get(self.max_active_requests_key).decode("utf-8"))
+            redis_client.expire(self.max_active_requests_key, timedelta(days=1))
 
         # flush max active requests (in-transit request list)
         if not redis_client.exists(self.active_requests_key):
